@@ -1,7 +1,10 @@
 {
-  "name": "ChangeSummary",
-  "version": "0.0.0",
-  "description": "ChangeSummary =============",
+  "name": "change-summary",
+  "version": "0.1.0",
+  "description": "ChangeSummary is a library for observing changes in JavaScript data",
+  "contributors": [
+    "Sam Duvall <sam@rocketwhale.com>"
+  ],
   "main": "change_summary.js",
   "directories": {
     "example": "examples",
