@@ -91,7 +91,7 @@
     return obj === Object(obj);
   }
 
-  var numberIsNaN = global.Number.isNaN || function(value) {
+  var numberIsNaN = (global.Number && global.Number.isNaN) || function(value) {
     return typeof value === 'number' && global.isNaN(value);
   }
 
@@ -1694,4 +1694,17 @@
   global.CompoundObserver = CompoundObserver;
   global.Path = Path;
   global.ObserverTransform = ObserverTransform;
-})(typeof global !== 'undefined' && global && typeof module !== 'undefined' && module ? global : this || window);
+})(
+  (function() {
+        var root = null;
+        if ( typeof module !== 'undefined' && typeof module.exports !== 'undefined' ) {
+            root = module.exports;
+        } else if (  typeof global !== 'undefined' && global && typeof module !== 'undefined' && module ) {
+            root = global;
+        } else {
+            root = this || window;
+        }
+        return root;
+  })()
+    
+);
