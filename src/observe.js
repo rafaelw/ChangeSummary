@@ -973,6 +973,106 @@
     });
   };
 
+  function ArrayContentsObserver(array, observerConstructor) {
+    if (!Array.isArray(array)) {
+      throw new Error('Input object not an array: ' + input);
+    }
+    Observer.call(this, array);
+
+    this.elemObserverConstructor_ = observerConstructor;
+    this.elemObservers_ = null;
+    this.arrayObserver_ = null;
+    this.isSkippingChanges_ = false;
+  }
+
+  ArrayContentsObserver.prototype = {
+    __proto__: Observer.prototype,
+    connect_: function() {
+      this.elemObservers_ = [];
+
+      var self = this;
+
+      this.value_.forEach(function(elem) {
+        self.elemObservers_.push(self.startElemObserver_(elem));
+      });
+
+      this.arrayObserver_ = new ArrayObserver(this.value_);
+      this.arrayObserver_.open(function(splices) {
+        // Check to ensure that indexes are in increasing order
+        var currIndex = -1;
+        slices.forEach(function(splice) {
+          if (currIndex >= splice.index) {
+            throw new Error('Got bad ordering of splices');
+          }
+
+          currIndex = splice.index;
+
+          self.handleSplice_(splice);
+        });
+
+        if (!this.isSkippingChanges_) {
+          this.report_(['splice', slices]);
+        }
+      });
+    },
+
+    disconnect_: function() {
+      this.elemObservers_.forEach(function(obs) {
+        obs.close();
+      });
+
+      this.elemObservers_ = null;
+
+      this.arrayObserver_.close();
+      this.arrayObserver_ = null;
+    },
+
+    check_: function(changeRecords, skipChanges) {
+      // changeRecords should always be null/undefined, since we only depend
+      // on the observer API.
+      if (skipChanges) {
+        for (var i = 0; i < this.elemObservers_; i++) {
+          this.elemObservers_[i].discardChanges();
+        }
+        // Apply changes from the array, but don't report any messages.
+        this.isSkippingChanges_ = true;
+        this.arrayObserver_.dispatch();
+        this.isSkippingChanges_ = false;
+      }
+
+      return false;
+    },
+
+    startElemObserver_: function(elem) {
+      var observer = this.elemObserverConstructor_(elem);
+      var self = this;
+      observer.open(function() {
+        self.report_(['indexChange', {
+          index: self.elemObservers_.indexOf(observer),
+          changeArgs: arguments,
+        }]);
+      });
+      return observer;
+    },
+
+    handleSplice_: function(splice) {
+      // Close the entries that have been removed.
+      for (var i = splice.index; i < splice.index + splice.removed.length; i++) {
+        this.tokenObservers[i].close();
+      }
+
+      var addedObservers = [];
+
+      for (var i = splice.index; i < splice.index + splice.addedCount; i++) {
+        addedObservers.push(this.startElemObserver_(this.value_[i]));
+      }
+
+      Array.prototype.splice.apply(
+          this.tokenObservers,
+          [splice.index, splice.removed.length].concat(addedObservers));
+    },
+  }
+
   function PathObserver(object, path) {
     Observer.call(this);
 
@@ -1155,6 +1255,19 @@
       // pretty lame API. Fix.
       this.report_([this.value_, oldValues, this.observed_]);
       return true;
+    }
+  });
+
+  function CustomObjectObservable(object, types) {
+    Observable.call(this);
+
+    this.object = object;
+    this.types = types;
+  }
+
+  CustomObjectObservable.prototype = createObject({
+    connect_: function() {
+
     }
   });
 
@@ -1700,6 +1813,7 @@
   expose.ArrayObserver.calculateSplices = function(current, previous) {
     return arraySplice.calculateSplices(current, previous);
   };
+  expose.ArrayContentsObserver = ArrayContentsObserver;
 
   expose.ArraySplice = ArraySplice;
   expose.ObjectObserver = ObjectObserver;
@@ -1707,5 +1821,5 @@
   expose.CompoundObserver = CompoundObserver;
   expose.Path = Path;
   expose.ObserverTransform = ObserverTransform;
-  
+
 })(typeof global !== 'undefined' && global && typeof module !== 'undefined' && module ? global : this || window);
