@@ -1258,19 +1258,6 @@
     }
   });
 
-  function CustomObjectObservable(object, types) {
-    Observable.call(this);
-
-    this.object = object;
-    this.types = types;
-  }
-
-  CustomObjectObservable.prototype = createObject({
-    connect_: function() {
-
-    }
-  });
-
   function identFn(value) { return value; }
 
   function ObserverTransform(observable, getValueFn, setValueFn,
