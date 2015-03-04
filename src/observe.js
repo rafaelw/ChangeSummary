@@ -1685,7 +1685,7 @@
 
   var expose = global;
 
-  if (typeof exports !== 'undefined' && !exports.nodeType) {
+  if (typeof window === 'undefined' && typeof exports !== 'undefined' && !exports.nodeType) {
     if (typeof module !== 'undefined' && module.exports) {
       exports = module.exports;
     }
@@ -1708,4 +1708,4 @@
   expose.Path = Path;
   expose.ObserverTransform = ObserverTransform;
   
-})(typeof global !== 'undefined' && global && typeof module !== 'undefined' && module ? global : this || window);
+})(window || global);
