@@ -76,6 +76,35 @@ ArrayObserver also exposes a utility function: `applySplices`. The purpose of `a
 AraryObserver.applySplices = function(previous, current, splices) { }
 ```
 
+### ArrayContentsObserver
+
+ArrayContentsObserver observes the state of the given array, as well as the elements of the array itself. To observe the elements, the constructor takes a function which, when passed an element of the array, returns a new observer object for observing that element.
+
+```JavaScript
+var arr = [{foo: 1, bar: 2}];
+var observerFactory = function(elem) {
+  return new ObjectObserver(elem);
+};
+var observer = ArrayContentsObserver(arr, observerFactory);
+observer.open(function(type, data) {
+  switch (type) {
+    case 'splices': {
+      // "data" is an array of splice arguments, as with ArrayObserver
+      break;
+    }
+
+    case 'elemChange': {
+      data.index; // The index of the array that the change occured at.
+      data.changeArgs; // The array of arguments that were passed to the
+                       // element's observation function
+    }
+  }
+});
+
+arr[0].foo = 2; // Function called with ['elemChanged', [{}, {}, {foo: 2}]]
+arr.push({foo: 3, bar: 4}); // Function called with ['splices', [{index: 1, removed: [], addedCount: 1}]]
+```
+
 ### ObjectObserver
 
 ObjectObserver observes the set of own-properties of an object and their values.
